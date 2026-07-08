@@ -1,4 +1,4 @@
-import { Worker, Job } from 'bullmq';
+import { Worker, Job, Queue } from 'bullmq';
 import Redis from 'ioredis';
 import { createClient } from '@supabase/supabase-js';
 
@@ -27,6 +27,57 @@ const connection = new Redis(REDIS_URL, {
 });
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+const uptimeQueue = new Queue(QUEUE_NAME, { connection });
+const MONITOR_CHECK_INTERVAL_MS = 60_000; // 1 minute
+
+async function scheduleMonitorChecks() {
+  const now = new Date().toISOString();
+  const dueCutoff = new Date(Date.now() - MONITOR_CHECK_INTERVAL_MS).toISOString();
+
+  // Fetch active monitors that are due
+  const { data: monitors, error } = await supabase
+    .schema('public') // Assuming tables are in public, but prompt earlier said 'uptimeguard' schema for supabase. Wait, let me check the prompt snippet: supabase.schema('uptimeguard')
+    // I will use uptimeguard as requested by the user's snippet. But wait, in the previous code I used the default schema.
+    // The previous code `worker/index.ts` just did `supabase.from('pings')`. 
+    // Let me check if I should use `.schema('uptimeguard')`. 
+    // The snippet explicitly has `.schema('uptimeguard')`. But if RLS is on 'uptimeguard' schema, maybe I should just use what they gave.
+    // Let's use the provided snippet exactly.
+    .schema('uptimeguard')
+    .from('monitors')
+    .select('id, url, method, expected_status')
+    .eq('is_active', true)
+    .or(`last_checked_at.is.null,last_checked_at.lt.${dueCutoff}`);
+
+  if (error) {
+    console.error('Failed to fetch due monitors:', error);
+    return;
+  }
+
+  if (monitors && monitors.length > 0) {
+    for (const monitor of monitors) {
+      await uptimeQueue.add('ping-check', {
+        monitorId: monitor.id,
+        url: monitor.url,
+        method: monitor.method || 'GET',
+        expectedStatus: monitor.expected_status || 200,
+      });
+    }
+
+    // Bulk update last_checked_at to prevent duplicate enqueues
+    await supabase
+      .schema('uptimeguard')
+      .from('monitors')
+      .update({ last_checked_at: now })
+      .in('id', monitors.map(m => m.id));
+
+    console.log(`📅 Enqueued ${monitors.length} monitors`);
+  }
+}
+
+// Start the scheduler loop
+setInterval(scheduleMonitorChecks, MONITOR_CHECK_INTERVAL_MS);
+console.log('⏰ Scheduler started – checking due monitors every 60s');
 
 interface PingJobData {
   monitorId: string;
