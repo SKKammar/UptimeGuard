@@ -28,7 +28,7 @@ const connection = new Redis(REDIS_URL, {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-const uptimeQueue = new Queue(QUEUE_NAME, { connection });
+const uptimeQueue = new Queue(QUEUE_NAME, { connection: connection as any });
 const MONITOR_CHECK_INTERVAL_MS = 60_000; // 1 minute
 
 async function scheduleMonitorChecks() {
@@ -200,7 +200,7 @@ const worker = new Worker<PingJobData>(
 
     return { statusCode, responseTime: responseTimeMs, isUp, errorMessage };
   },
-  { connection, concurrency: 5 }
+  { connection: connection as any, concurrency: 5 }
 );
 
 worker.on('ready', () => {

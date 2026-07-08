@@ -10,7 +10,7 @@ const connection = new Redis(REDIS_URL, {
   maxRetriesPerRequest: null,
 });
 
-export const monitorQueue = new Queue(QUEUE_NAME, { connection });
+export const monitorQueue = new Queue(QUEUE_NAME, { connection: connection as any });
 
 export async function enqueueMonitorCheck(
   monitorId: string,
