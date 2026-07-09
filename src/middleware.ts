@@ -36,6 +36,10 @@ export async function middleware(request: NextRequest) {
   // The prompt says "protect all routes under /(dashboard)" but implies the URL path.
   // We'll protect /, /settings, /monitors/new. 
   // Let's assume any route that isn't /login, /register, /callback, or /status/* or /api/* requires auth.
+  // NOTE: /api/* is intentionally treated as "public" here. Auth for API routes is
+  // enforced per-route (see supabase.auth.getUser() calls inside each handler), not
+  // by this middleware. If you add a new route under src/app/api/, you MUST add an
+  // auth check inside that route's handler — middleware will NOT protect it.
   
   const isPublicRoute = request.nextUrl.pathname.startsWith('/login') || 
                         request.nextUrl.pathname.startsWith('/register') || 
