@@ -67,7 +67,12 @@ async function sendDiscordAlert(
   });
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const authHeader = request.headers.get('authorization');
+  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const now = new Date().toISOString();
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
