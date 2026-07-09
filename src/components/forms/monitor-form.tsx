@@ -84,9 +84,8 @@ export function MonitorForm() {
           id="interval"
           name="interval"
           className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-          defaultValue={60}
+          defaultValue={300}
         >
-          <option value={60}>Every 1 minute</option>
           <option value={300}>Every 5 minutes</option>
           <option value={900}>Every 15 minutes</option>
         </select>
