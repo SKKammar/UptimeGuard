@@ -4,7 +4,8 @@ import { NextResponse } from 'next/server';
 // Service‑role client (needed because this endpoint has no user session)
 const supabaseService = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { db: { schema: 'uptimeguard' } }
 );
 
 export const dynamic = 'force-dynamic'; // Don't cache
@@ -72,7 +73,6 @@ export async function GET() {
 
   // 1. Fetch active monitors due for a check
   const { data: monitors, error } = await supabaseService
-    .schema('uptimeguard')
     .from('monitors')
     .select('id, name, url, method, expected_status, user_id')
     .eq('is_active', true)
@@ -96,7 +96,6 @@ export async function GET() {
 
     // Store the ping
     const { error: pingError } = await supabaseService
-      .schema('uptimeguard')
       .from('pings')
       .insert({
         monitor_id: monitor.id,
@@ -112,7 +111,6 @@ export async function GET() {
 
     // Check for consecutive failures (last 2 pings) to decide if we should alert
     const { data: recentPings } = await supabaseService
-      .schema('uptimeguard')
       .from('pings')
       .select('is_up')
       .eq('monitor_id', monitor.id)
@@ -133,7 +131,6 @@ export async function GET() {
     if (consecutiveFailures || isRecovery) {
       // Fetch the user’s Discord webhook
       const { data: settings } = await supabaseService
-        .schema('uptimeguard')
         .from('user_settings')
         .select('discord_webhook_url')
         .eq('user_id', monitor.user_id)
@@ -150,7 +147,6 @@ export async function GET() {
 
         // Optionally log the alert in the alerts table
         await supabaseService
-          .schema('uptimeguard')
           .from('alerts')
           .insert({
             monitor_id: monitor.id,
@@ -163,7 +159,6 @@ export async function GET() {
 
   // 3. Bulk update last_checked_at to avoid re‑checking them too soon
   const { error: updateError } = await supabaseService
-    .schema('uptimeguard')
     .from('monitors')
     .update({ last_checked_at: now })
     .in(
