@@ -74,14 +74,14 @@ export async function GET(request: Request) {
   }
 
   const now = new Date().toISOString();
-  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  const sixtySecondsAgo = new Date(Date.now() - 60 * 1000).toISOString();
 
   // 1. Fetch active monitors due for a check
   const { data: monitors, error } = await supabaseService
     .from('monitors')
-    .select('id, name, url, method, expected_status, user_id')
+    .select('id, name, url, method, expected_status, user_id, check_interval_seconds, last_checked_at')
     .eq('is_active', true)
-    .or(`last_checked_at.is.null, last_checked_at.lt.${fiveMinutesAgo}`);
+    .or(`last_checked_at.is.null, last_checked_at.lt.${sixtySecondsAgo}`);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -91,8 +91,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ enqueued: 0 });
   }
 
+  const dueMonitors = monitors.filter((m) => {
+    if (!m.last_checked_at) return true;
+    const elapsedMs = Date.now() - new Date(m.last_checked_at).getTime();
+    return elapsedMs >= (m.check_interval_seconds ?? 60) * 1000;
+  });
+
+  if (dueMonitors.length === 0) {
+    return NextResponse.json({ enqueued: 0 });
+  }
+
   // 2. For each due monitor, ping and save result
-  for (const monitor of monitors) {
+  for (const monitor of dueMonitors) {
     const result = await pingUrl(
       monitor.url,
       monitor.method || 'GET',
@@ -168,12 +178,12 @@ export async function GET(request: Request) {
     .update({ last_checked_at: now })
     .in(
       'id',
-      monitors.map((m) => m.id)
+      dueMonitors.map((m) => m.id)
     );
 
   if (updateError) {
     console.error('Failed to update last_checked_at:', updateError);
   }
 
-  return NextResponse.json({ enqueued: monitors.length });
+  return NextResponse.json({ enqueued: dueMonitors.length });
 }
