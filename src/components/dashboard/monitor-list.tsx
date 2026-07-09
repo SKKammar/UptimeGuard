@@ -21,6 +21,7 @@ type Monitor = {
   name: string
   url: string
   last_checked_at: string | null
+  is_public: boolean
 }
 
 type MonitorStatus = {
@@ -88,6 +89,16 @@ export function MonitorList({ initialMonitors, initialStatuses }: { initialMonit
     }
   }
 
+  const togglePublic = async (id: string, currentStatus: boolean) => {
+    await fetch(`/api/monitors/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_public: !currentStatus })
+    })
+    setMonitors(monitors.map(m => m.id === id ? { ...m, is_public: !currentStatus } : m))
+    router.refresh()
+  }
+
   return (
     <div className="rounded-md border">
       <Table>
@@ -97,13 +108,14 @@ export function MonitorList({ initialMonitors, initialStatuses }: { initialMonit
             <TableHead>Name</TableHead>
             <TableHead>URL</TableHead>
             <TableHead>Last Ping</TableHead>
+            <TableHead>Public Status</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {monitors.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+              <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                 No monitors found. Create one to get started.
               </TableCell>
             </TableRow>
@@ -129,6 +141,21 @@ export function MonitorList({ initialMonitors, initialStatuses }: { initialMonit
                   <TableCell className="text-gray-500">{monitor.url}</TableCell>
                   <TableCell>
                     {status ? `${status.response_time_ms}ms` : '-'}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1 items-start">
+                      <button 
+                        onClick={() => togglePublic(monitor.id, monitor.is_public)}
+                        className={`text-xs px-2 py-1 rounded-full font-medium ${monitor.is_public ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}
+                      >
+                        {monitor.is_public ? 'Public' : 'Private'}
+                      </button>
+                      {monitor.is_public && (
+                        <a href={`/status/${monitor.id}`} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline flex items-center">
+                          View Link
+                        </a>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" onClick={() => handleDelete(monitor.id)}>

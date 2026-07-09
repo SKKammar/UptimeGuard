@@ -24,7 +24,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const { name, url, method, expected_status, check_interval_seconds } = body
+    const { name, url, method, expected_status, check_interval_seconds, is_public } = body
 
     if (!name || !url) {
       return NextResponse.json({ error: 'Name and URL are required' }, { status: 400 })
@@ -39,6 +39,7 @@ export async function POST(request: Request) {
         method: method || 'GET',
         expected_status: expected_status || 200,
         check_interval_seconds: check_interval_seconds || 60,
+        is_public: is_public || false,
       })
       .select()
       .single()

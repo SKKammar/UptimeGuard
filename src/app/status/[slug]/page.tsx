@@ -19,11 +19,11 @@ export default async function StatusPage({ params }: { params: Promise<{ slug: s
   // Fetch monitor details
   const { data: monitor } = await supabase
     .from('monitors')
-    .select('id, name, url')
+    .select('id, name, url, is_public')
     .eq('id', slug)
     .single()
 
-  if (!monitor) {
+  if (!monitor || !monitor.is_public) {
     notFound()
   }
 

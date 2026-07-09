@@ -23,6 +23,7 @@ export function MonitorForm() {
       method: formData.get("method"),
       expected_status: Number(formData.get("expected_status")),
       check_interval_seconds: Number(formData.get("interval")),
+      is_public: formData.get("is_public") === "on",
     }
 
     try {
@@ -89,6 +90,18 @@ export function MonitorForm() {
           <option value={300}>Every 5 minutes</option>
           <option value={900}>Every 15 minutes</option>
         </select>
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <input 
+          type="checkbox" 
+          id="is_public" 
+          name="is_public" 
+          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
+        />
+        <Label htmlFor="is_public" className="font-normal text-gray-700">
+          Make status page public
+        </Label>
       </div>
 
       <Button type="submit" disabled={loading} className="w-full">
