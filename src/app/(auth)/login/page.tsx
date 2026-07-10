@@ -1,21 +1,17 @@
 "use client"
 
 import { useState, useEffect, Suspense } from "react"
-import { createClient } from "@/lib/supabase/client"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
+import { login } from "../actions"
 
 function LoginForm() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const searchParams = useSearchParams()
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const supabase = createClient()
 
   useEffect(() => {
     const urlError = searchParams.get("error")
@@ -24,44 +20,18 @@ function LoginForm() {
     }
   }, [searchParams])
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
-
-    try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      if (signInError) {
-        setError(signInError.message)
-        setLoading(false)
-      } else {
-        router.push("/dashboard")
-        router.refresh()
-      }
-    } catch (err: any) {
-      console.error("Unexpected login error:", err)
-      setError(err?.message || "An unexpected error occurred during login")
-      setLoading(false)
-    }
-  }
-
   return (
     <div className="flex h-screen items-center justify-center bg-gray-50">
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
         <h1 className="text-2xl font-bold mb-6 text-center">Login to UptimeGuard</h1>
         {error && <div className="mb-4 text-red-700 bg-red-50 border border-red-200 p-3 rounded text-sm text-center">{error}</div>}
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form action={login} onSubmit={() => setLoading(true)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
+              name="email"
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
@@ -69,9 +39,8 @@ function LoginForm() {
             <Label htmlFor="password">Password</Label>
             <Input
               id="password"
+              name="password"
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
               required
             />
           </div>
