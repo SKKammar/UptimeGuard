@@ -2,6 +2,10 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+  console.log("========================================");
+  console.log("MIDDLEWARE RUNNING FOR:", request.nextUrl.pathname);
+  console.log("COOKIES RECEIVED BY SERVER:", request.cookies.getAll().map(c => c.name));
+  
   let supabaseResponse = NextResponse.next({
     request,
   })
