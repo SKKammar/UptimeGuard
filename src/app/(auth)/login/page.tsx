@@ -39,13 +39,8 @@ function LoginForm() {
         setError(signInError.message)
         setLoading(false)
       } else {
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL
-        if (appUrl) {
-          window.location.href = `${appUrl}/dashboard`
-        } else {
-          router.push("/dashboard")
-          router.refresh()
-        }
+        router.push("/dashboard")
+        router.refresh()
       }
     } catch (err: any) {
       console.error("Unexpected login error:", err)
