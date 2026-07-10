@@ -1,28 +1,28 @@
-import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server';
+import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 
-export async function GET(request: Request) {
-  const requestUrl = new URL(request.url)
-  const code = requestUrl.searchParams.get('code')
+export async function GET(request: NextRequest) {
+  const requestUrl = new URL(request.url);
+  const code = requestUrl.searchParams.get('code');
+  const next = requestUrl.searchParams.get('next') || '/dashboard';
   
-  // Use NEXT_PUBLIC_APP_URL for explicit production domain, fallback to origin for local dev
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || requestUrl.origin
+  // Explicitly construct baseUrl for redirects like before
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || requestUrl.origin;
 
   if (code) {
-    try {
-      const supabase = await createClient()
-      const { error } = await supabase.auth.exchangeCodeForSession(code)
-      
-      if (error) {
-        console.error('Auth Callback Error exchanging code:', error.message, error)
-        return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(error.message)}`, baseUrl))
-      }
-    } catch (err) {
-      console.error('Unexpected Auth Callback Error:', err)
-      return NextResponse.redirect(new URL(`/login?error=Unexpected_Error`, baseUrl))
+    const supabase = await createClient();
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+    if (!error) {
+      // Success! Redirect to dashboard (or next).
+      return NextResponse.redirect(new URL(next, baseUrl));
     }
+
+    // Log the error (optional) and redirect to login with error
+    console.error('Auth callback error:', error);
   }
 
-  // URL to redirect to after sign in process completes
-  return NextResponse.redirect(new URL('/dashboard', baseUrl))
+  // If no code or error, redirect to login with error param
+  return NextResponse.redirect(new URL('/login?error=auth_failed', baseUrl));
 }

@@ -21,7 +21,12 @@ export async function middleware(request: NextRequest) {
             request,
           })
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, {
+              ...options,
+              secure: true,
+              sameSite: 'lax',
+              path: '/',
+            })
           )
         },
       },
@@ -30,6 +35,13 @@ export async function middleware(request: NextRequest) {
 
   // refreshing the auth token
   const { data: { user } } = await supabase.auth.getUser()
+
+  // If logged in and trying to access login page, redirect to dashboard to prevent redirect loops
+  if (user && request.nextUrl.pathname.startsWith('/login')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
+    return NextResponse.redirect(url)
+  }
 
   // protect routes under /(dashboard)
   // Note: App Router paths don't include the group `(dashboard)` in the URL.
