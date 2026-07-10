@@ -10,7 +10,7 @@ export async function createClient() {
     {
       db: { schema: 'uptimeguard' },
       global: {
-        fetch: (url, options) => {
+        fetch: (url: RequestInfo | URL, options?: RequestInit) => {
           return fetch(url, { ...options, cache: 'no-store' })
         },
       },
