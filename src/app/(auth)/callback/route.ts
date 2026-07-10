@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
     if (!error) {
       // Success! Redirect to dashboard (or next).
-      return NextResponse.redirect(new URL(next, baseUrl));
+      return NextResponse.redirect(new URL(next, baseUrl), 303);
     }
 
     // Log the error (optional) and redirect to login with error
@@ -24,5 +24,5 @@ export async function GET(request: NextRequest) {
   }
 
   // If no code or error, redirect to login with error param
-  return NextResponse.redirect(new URL('/login?error=auth_failed', baseUrl));
+  return NextResponse.redirect(new URL('/login?error=auth_failed', baseUrl), 303);
 }
