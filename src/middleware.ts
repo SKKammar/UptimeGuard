@@ -12,7 +12,21 @@ export async function middleware(request: NextRequest) {
     {
       db: { schema: 'uptimeguard' },
       global: {
-        fetch: (url: RequestInfo | URL, options?: RequestInit) => fetch(url, { ...options, cache: 'no-store' }),
+        fetch: (url: RequestInfo | URL, options?: RequestInit) => {
+          const urlString = url instanceof Request ? url.url : url.toString();
+          const newUrl = new URL(urlString);
+          newUrl.searchParams.set('_t', Date.now().toString());
+          return fetch(newUrl.toString(), {
+            ...options,
+            cache: 'no-store',
+            headers: {
+              ...options?.headers,
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0',
+            },
+          });
+        },
       },
       cookies: {
         getAll() {

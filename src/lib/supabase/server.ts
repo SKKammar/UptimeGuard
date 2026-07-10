@@ -11,7 +11,21 @@ export async function createClient() {
       db: { schema: 'uptimeguard' },
       global: {
         fetch: (url: RequestInfo | URL, options?: RequestInit) => {
-          return fetch(url, { ...options, cache: 'no-store' })
+          // APPEND TIMESTAMP TO KILL ALL CACHING FOREVER
+          const urlString = url instanceof Request ? url.url : url.toString();
+          const newUrl = new URL(urlString);
+          newUrl.searchParams.set('_t', Date.now().toString());
+          
+          return fetch(newUrl.toString(), {
+            ...options,
+            cache: 'no-store',
+            headers: {
+              ...options?.headers,
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0',
+            },
+          });
         },
       },
       cookies: {
