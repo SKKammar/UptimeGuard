@@ -7,7 +7,8 @@ export function createClient() {
     { 
       db: { schema: 'uptimeguard' },
       cookieOptions: {
-        secure: process.env.NODE_ENV === 'production',
+        secure: true, // REQUIRED for HTTPS (Vercel)
+        sameSite: 'lax',
         path: '/',
       }
     }
